@@ -1,6 +1,6 @@
 <?php
 
-namespace Superman2014\CaptchaRepository\Facades;
+namespace Superman2014\CaptchaRepository\Facade;
 
 use Illuminate\Support\Facades\Facade;
 
