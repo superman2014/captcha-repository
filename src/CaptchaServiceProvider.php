@@ -47,7 +47,7 @@ class CaptchaServiceProvider extends ServiceProvider
             }
         );
 
-        $this->app->alias('captcharepository', 'Superman2014\CaptchaRepository\CaptchaRepository');
+        $this->app->alias('captcharepository', 'Superman2014\CaptchaRepository\Facade\CaptchaRepository');
     }
 
     public function providers()
