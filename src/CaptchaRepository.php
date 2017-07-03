@@ -2,8 +2,6 @@
 
 namespace Superman2014\CaptchaRepository;
 
-use Illuminate\Contracts\Foundation\Application;
-
 class CaptchaRepository
 {
     const CAPTCHA_EXPIRE = -1;
@@ -12,7 +10,7 @@ class CaptchaRepository
     protected $connection;
 	protected $config;
 
-    public function __construct(Application $app)
+    public function __construct($app)
     {
 		$this->config = $app['config']->get('captcha');
         $this->connection = $app['redis']->connection($this->config['redis_connection']);
