@@ -11,4 +11,7 @@ return [
     'captcha_limit_key' => 'captcha_limit',
     'captcha_limit_times' => env('CAPTCHA_LIMIT_TIMES', 5),
     'captcha_limit_expire' => env('CAPTCHA_LIMIT_EXPIRE', 3600),
+
+    //多国家发送
+    'multi_country' => false,
 ];

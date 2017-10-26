@@ -2,93 +2,116 @@
 
 namespace Superman2014\CaptchaRepository;
 
+use RuntimeException;
+
 class CaptchaRepository
 {
-    const CAPTCHA_EXPIRE = -1;
-    const CAPTCHA_ERROR = 0;
+	const CAPTCHA_EXPIRE = -1;
+	const CAPTCHA_ERROR = 0;
 
-    protected $connection;
+	protected $connection;
 	protected $config;
+	protected $multiCountry = false;
 
-    public function __construct($app)
-    {
+	public function __construct($app)
+	{
 		$this->config = $app['config']->get('captcha');
-        $this->connection = $app['redis']->connection($this->config['redis_connection']);
-    }
+		$this->connection = $app['redis']->connection($this->config['redis_connection']);
+		if (! empty($this->config['multi_country'])) {
+			$this->multiCountry = true;
+		}
+	}
 
-    protected function getCaptchaKey($name)
-    {
-        return implode(':', [$this->config['captcha_key'], $name]);
-    }
+	protected function getCaptchaKey($name, $countryCode = null)
+	{
+		if ($this->multiCountry) {
+			if ($countryCode) {
+				return implode(':', [$this->config['captcha_key'], $countryCode, $name]);
+			}
 
-    /**
-     * 获取存档验证码.
-     *
-     * @param string $name 用户的手机号
-     *
-     * @return string
-     */
-    public function getCaptcha($name)
-    {
-        return $this->connection->get($this->getCaptchaKey($name));
-    }
+			throw new RuntimeException('A country code is null');
+		}
+		return implode(':', [$this->config['captcha_key'], $name]);
+	}
 
-    /**
-     * 临时存档验证码.
-     *
-     * @param string  $name         用户的手机号
-     * @param string  $inputCaptcha 用户输入的验证码
-     * @param integer $expire       有效期
-     *
-     * @return bool
-     */
-    public function achiveCaptcha($name, $inputCaptcha, $expire = null)
-    {
+	/**
+	 * 获取存档验证码.
+	 *
+	 * @param string $name 用户的手机号
+	 * @param string $countryCode 国家代码
+	 *
+	 * @return string
+	 */
+	public function getCaptcha($name, $countryCode = null)
+	{
+		return $this->connection->get($this->getCaptchaKey($name, $countryCode));
+	}
+
+	/**
+	 * 临时存档验证码.
+	 *
+	 * @param string  $name         用户的手机号
+	 * @param string  $inputCaptcha 用户输入的验证码
+	 * @param integer $expire       有效期
+	 * @param string  $countryCode  国家代码
+	 *
+	 * @return bool
+	 */
+	public function achiveCaptcha($name, $inputCaptcha, $expire = null, $countryCode = null)
+	{
 		$expire = $expire ?:$this->config['captcha_expire'];
-        return $this->connection->setEx($this->getCaptchaKey($name), $expire, $inputCaptcha);
-    }
+		return $this->connection->setEx($this->getCaptchaKey($name, $countryCode), $expire, $inputCaptcha);
+	}
 
-    /**
-     * 比较验证码.
-     *
-     * @param string $name         用户的手机号
-     * @param string $inputCaptcha 用户输入的验证码
-     *
-     * @return -1 失效 0 失败 1 正确
-     */
-    public function compareCaptcha($name, $inputCaptcha)
-    {
-        return ($captcha = $this->getCaptcha($name))
-            ? ($captcha == $inputCaptcha?1:0)
-            :-1;
-    }
+	/**
+	 * 比较验证码.
+	 *
+	 * @param string $name         用户的手机号
+	 * @param string $inputCaptcha 用户输入的验证码
+	 * @param string $countryCode  国家代码
+	 *
+	 * @return -1 失效 0 失败 1 正确
+	 */
+	public function compareCaptcha($name, $inputCaptcha, $countryCode = null)
+	{
+		return ($captcha = $this->getCaptcha($name, $countryCode))
+			? ($captcha == $inputCaptcha?1:0)
+			:-1;
+	}
 
-    /**
-     * 发送验证码是否频繁.
-     *
-     * @param $name
-     * @return bool
-     */
-    public function isOverLimit($name)
-    {
-        $key = implode(':', [$this->config['captcha_limit_key'], $name]);
-        $number = $this->connection->get($key);
+	/**
+	 * 发送验证码是否频繁.
+	 *
+	 * @param string  $name         用户的手机号
+	 * @param string  $countryCode  国家代码
+	 *
+	 * @return bool
+	 */
+	public function isOverLimit($name, $countryCode = null)
+	{
+		if ($countryCode) {
+			$key = implode(':', [$this->config['captcha_limit_key'], $countryCode, $name]);
+		} else {
+			$key = implode(':', [$this->config['captcha_limit_key'], $name]);
+		}
+		$number = $this->connection->get($key);
 
-        if ($number) {
-            if ($number > $this->config['captcha_limit_times'] - 1) {
-                return true;
-            }
+		if ($number) {
+			if ($number > $this->config['captcha_limit_times'] - 1) {
+				return true;
+			}
 
 			$this->connection->incr($key);
-        } else {
+		} else {
 			$this->connection->setEx(
 				$key,
 				$this->config['captcha_expire'],
 				1
 			);
-        }
+		}
 
 		return false;
-    }
+	}
 }
+
 
