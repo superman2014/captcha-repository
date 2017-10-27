@@ -22,14 +22,14 @@ class CaptchaRepository
 		}
 	}
 
-	protected function getCaptchaKey($name, $countryCode = null)
+	protected function getCaptchaKey($name, $region = null)
 	{
 		if ($this->multiCountry) {
-			if ($countryCode) {
-				return implode(':', [$this->config['captcha_key'], $countryCode, $name]);
+			if ($region) {
+				return implode(':', [$this->config['captcha_key'], $region, $name]);
 			}
 
-			throw new RuntimeException('A country code is null');
+			throw new RuntimeException('A region is null');
 		}
 		return implode(':', [$this->config['captcha_key'], $name]);
 	}
@@ -38,13 +38,13 @@ class CaptchaRepository
 	 * 获取存档验证码.
 	 *
 	 * @param string $name 用户的手机号
-	 * @param string $countryCode 国家代码
+	 * @param string $region 国家代码
 	 *
 	 * @return string
 	 */
-	public function getCaptcha($name, $countryCode = null)
+	public function getCaptcha($name, $region = null)
 	{
-		return $this->connection->get($this->getCaptchaKey($name, $countryCode));
+		return $this->connection->get($this->getCaptchaKey($name, $region));
 	}
 
 	/**
@@ -53,14 +53,14 @@ class CaptchaRepository
 	 * @param string  $name         用户的手机号
 	 * @param string  $inputCaptcha 用户输入的验证码
 	 * @param integer $expire       有效期
-	 * @param string  $countryCode  国家代码
+	 * @param string  $region  国家代码
 	 *
 	 * @return bool
 	 */
-	public function achiveCaptcha($name, $inputCaptcha, $expire = null, $countryCode = null)
+	public function achiveCaptcha($name, $inputCaptcha, $expire = null, $region = null)
 	{
 		$expire = $expire ?:$this->config['captcha_expire'];
-		return $this->connection->setEx($this->getCaptchaKey($name, $countryCode), $expire, $inputCaptcha);
+		return $this->connection->setEx($this->getCaptchaKey($name, $region), $expire, $inputCaptcha);
 	}
 
 	/**
@@ -68,13 +68,13 @@ class CaptchaRepository
 	 *
 	 * @param string $name         用户的手机号
 	 * @param string $inputCaptcha 用户输入的验证码
-	 * @param string $countryCode  国家代码
+	 * @param string $region  国家代码
 	 *
 	 * @return -1 失效 0 失败 1 正确
 	 */
-	public function compareCaptcha($name, $inputCaptcha, $countryCode = null)
+	public function compareCaptcha($name, $inputCaptcha, $region = null)
 	{
-		return ($captcha = $this->getCaptcha($name, $countryCode))
+		return ($captcha = $this->getCaptcha($name, $region))
 			? ($captcha == $inputCaptcha?1:0)
 			:-1;
 	}
@@ -83,14 +83,14 @@ class CaptchaRepository
 	 * 发送验证码是否频繁.
 	 *
 	 * @param string  $name         用户的手机号
-	 * @param string  $countryCode  国家代码
+	 * @param string  $region  国家代码
 	 *
 	 * @return bool
 	 */
-	public function isOverLimit($name, $countryCode = null)
+	public function isOverLimit($name, $region = null)
 	{
-		if ($countryCode) {
-			$key = implode(':', [$this->config['captcha_limit_key'], $countryCode, $name]);
+		if ($region) {
+			$key = implode(':', [$this->config['captcha_limit_key'], $region, $name]);
 		} else {
 			$key = implode(':', [$this->config['captcha_limit_key'], $name]);
 		}
